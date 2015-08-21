@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Rackspace.CloudOffice")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Client for the Rackspace Cloud Office API")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Rackspace US, Inc.")]
 [assembly: AssemblyProduct("Rackspace.CloudOffice")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
