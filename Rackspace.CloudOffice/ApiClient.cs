@@ -42,15 +42,15 @@ namespace Rackspace.CloudOffice
             _baseUrl = ReadNode(config, "/config/baseUrl", defaultBaseUrl);
         }
 
-        public async Task<ExpandoObject> Get(string path)
+        public async Task<dynamic> Get(string path)
         {
             var response = await GetResponse(CreateJsonRequest("GET", path));
             return ParseJsonStream(response.GetResponseStream());
         }
 
-        public async Task<IEnumerable<ExpandoObject>> GetAll(string path, string pagedProperty, int pageSize = 50)
+        public async Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize = 50)
         {
-            var result = new List<ExpandoObject>();
+            var result = new List<dynamic>();
 
             var offset = 0;
             dynamic page;
@@ -59,8 +59,7 @@ namespace Rackspace.CloudOffice
                 var queryString = string.Format("offset={0}&size={1}", offset, pageSize);
                 page = await Get(JoinPathWithQueryString(path, queryString));
 
-                foreach (var item in GetProperty<IEnumerable<object>>(page, pagedProperty))
-                    result.Add(item);
+                result.AddRange(GetProperty<IEnumerable<dynamic>>(page, pagedProperty));
 
                 offset += pageSize;
             } while (offset < page.total);
@@ -68,7 +67,7 @@ namespace Rackspace.CloudOffice
             return result;
         }
 
-        public async Task<ExpandoObject> Post(string path, object data, string contentType = "application/x-www-form-urlencoded")
+        public async Task<dynamic> Post(string path, object data, string contentType = "application/x-www-form-urlencoded")
         {
             var request = CreateJsonRequest("POST", path);
             SendRequestBody(request, data, contentType);
@@ -77,7 +76,7 @@ namespace Rackspace.CloudOffice
             return ParseJsonStream(response.GetResponseStream());
         }
 
-        public async Task<ExpandoObject> Put(string path, object data, string contentType = "application/x-www-form-urlencoded")
+        public async Task<dynamic> Put(string path, object data, string contentType = "application/x-www-form-urlencoded")
         {
             var request = CreateJsonRequest("PUT", path);
             SendRequestBody(request, data, contentType);
