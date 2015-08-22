@@ -14,16 +14,13 @@ namespace Rackspace.CloudOffice
 {
     public class ApiClient
     {
-        private const string defaultBaseUrl = "https://api.emailsrvr.com";
-
-        private const string urlencodedType = "application/x-www-form-urlencoded";
-        private const string jsonType = "application/json";
+        private const string DefaultBaseUrl = "https://api.emailsrvr.com";
 
         private string _baseUrl;
         private string _userKey;
         private string _secretKey;
 
-        public ApiClient(string userKey, string secretKey, string baseUrl=defaultBaseUrl)
+        public ApiClient(string userKey, string secretKey, string baseUrl=DefaultBaseUrl)
         {
             _userKey = userKey;
             _secretKey = secretKey;
@@ -42,7 +39,7 @@ namespace Rackspace.CloudOffice
 
             _userKey = ReadNode(config, "/config/userKey");
             _secretKey = ReadNode(config, "/config/secretKey");
-            _baseUrl = ReadNode(config, "/config/baseUrl", defaultBaseUrl);
+            _baseUrl = ReadNode(config, "/config/baseUrl", DefaultBaseUrl);
         }
 
         public async Task<dynamic> Get(string path)
@@ -70,7 +67,7 @@ namespace Rackspace.CloudOffice
             return result;
         }
 
-        public async Task<dynamic> Post(string path, object data, string contentType=urlencodedType)
+        public async Task<dynamic> Post(string path, object data, string contentType=ContentType.UrlEncoded)
         {
             var request = CreateJsonRequest("POST", path);
             SendRequestBody(request, data, contentType);
@@ -79,7 +76,7 @@ namespace Rackspace.CloudOffice
             return ParseJsonStream(response.GetResponseStream());
         }
 
-        public async Task<dynamic> Put(string path, object data, string contentType=urlencodedType)
+        public async Task<dynamic> Put(string path, object data, string contentType=ContentType.UrlEncoded)
         {
             var request = CreateJsonRequest("PUT", path);
             SendRequestBody(request, data, contentType);
@@ -97,7 +94,7 @@ namespace Rackspace.CloudOffice
         {
             var request = (HttpWebRequest)HttpWebRequest.Create(_baseUrl + path);
             request.Method = method;
-            request.Accept = jsonType;
+            request.Accept = ContentType.Json;
             request.UserAgent = "https://gist.github.com/mkropat/07714ac4ecf97e785a4e";
 
             SignRequest(request);
@@ -169,8 +166,8 @@ namespace Rackspace.CloudOffice
         {
             switch (contentType)
             {
-                case urlencodedType: return FormUrlEncode(GetObjectAsDictionary(data));
-                case jsonType:       return JsonConvert.SerializeObject(data);
+                case ContentType.UrlEncoded: return FormUrlEncode(GetObjectAsDictionary(data));
+                case ContentType.Json:       return JsonConvert.SerializeObject(data);
                 default: throw new ArgumentException("Unsupported contentType: " + contentType);
             }
         }
@@ -194,6 +191,12 @@ namespace Rackspace.CloudOffice
                 WebUtility.UrlEncode(pair.Key),
                 WebUtility.UrlEncode(pair.Value)));
             return string.Join("&", pairs);
+        }
+
+        public static class ContentType
+        {
+            public const string UrlEncoded = "application/x-www-form-urlencoded";
+            public const string Json = "application/json";
         }
     }
 }
