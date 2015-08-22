@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
@@ -98,6 +99,9 @@ namespace Rackspace.CloudOffice
             request.UserAgent = "https://github.com/mkropat/RackspaceCloudOfficeApiClient";
 
             SignRequest(request);
+
+            Trace.WriteLine(string.Format("{0:HH:mm:ss.fff}: {1} {2}",
+                DateTime.Now, request.Method, request.RequestUri.AbsoluteUri));
 
             return request;
         }
