@@ -45,8 +45,8 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Get(string path)
         {
-            var response = await GetResponse(CreateJsonRequest("GET", path));
-            return ParseJsonStream(response.GetResponseStream());
+            using (var r = await GetResponse(CreateJsonRequest("GET", path)))
+                return ParseJsonStream(r.GetResponseStream());
         }
 
         public async Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize=50)
@@ -73,8 +73,8 @@ namespace Rackspace.CloudOffice
             var request = CreateJsonRequest("POST", path);
             SendRequestBody(request, data, contentType);
 
-            var response = await GetResponse(request);
-            return ParseJsonStream(response.GetResponseStream());
+            using (var r = await GetResponse(request))
+                return ParseJsonStream(r.GetResponseStream());
         }
 
         public async Task<dynamic> Put(string path, object data, string contentType=ContentType.UrlEncoded)
@@ -82,18 +82,19 @@ namespace Rackspace.CloudOffice
             var request = CreateJsonRequest("PUT", path);
             SendRequestBody(request, data, contentType);
 
-            var response = await GetResponse(request);
-            return ParseJsonStream(response.GetResponseStream());
+            using (var r = await GetResponse(request))
+                return ParseJsonStream(r.GetResponseStream());
         }
 
         public async void Delete(string path)
         {
-            await GetResponse(CreateJsonRequest("DELETE", path));
+            var r = await GetResponse(CreateJsonRequest("DELETE", path));
+            r.Dispose();
         }
 
         private HttpWebRequest CreateJsonRequest(string method, string path)
         {
-            var request = (HttpWebRequest)HttpWebRequest.Create(_baseUrl + path);
+            var request = (HttpWebRequest)WebRequest.Create(_baseUrl + path);
             request.Method = method;
             request.Accept = ContentType.Json;
             request.UserAgent = "https://github.com/mkropat/RackspaceCloudOfficeApiClient";
@@ -143,9 +144,7 @@ namespace Rackspace.CloudOffice
             request.ContentType = contentType;
 
             using (var writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII))
-            {
                 writer.Write(EncodeBody(data, contentType));
-            }
         }
 
         private static string JoinPathWithQueryString(string path, string queryString)
