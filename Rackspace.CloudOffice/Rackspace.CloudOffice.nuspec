@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/mkropat/RackspaceCloudOfficeApiClient</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>Initial release.</releaseNotes>
+    <releaseNotes>v0.2.0 - Change return types to dynamic [BREAKING CHANGE]</releaseNotes>
     <copyright>Copyright 2015</copyright>
     <tags>rackspace api</tags>
   </metadata>
