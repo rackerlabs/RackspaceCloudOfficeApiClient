@@ -223,7 +223,7 @@ namespace Rackspace.CloudOffice
                 while (delay > TimeSpan.Zero)
                 {
                     Trace.WriteLine("Throttling");
-                    await Task.Delay(delay);
+                    await Task.Delay(delay).ConfigureAwait(false);
                     delay = GetDelay();
                 }
             }
