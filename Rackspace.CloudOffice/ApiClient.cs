@@ -15,13 +15,13 @@ namespace Rackspace.CloudOffice
 {
     public class ApiClient
     {
-        private const string DefaultBaseUrl = "https://api.emailsrvr.com";
+        public const string DefaultBaseUrl = "https://api.emailsrvr.com";
 
-        private readonly string _baseUrl;
-        private readonly string _userKey;
-        private readonly string _secretKey;
+        public string BaseUrl { get; private set; }
+        public string UserKey { get; private set; }
 
-        private readonly Throttler _throttler = new Throttler
+        readonly string _secretKey;
+        readonly Throttler _throttler = new Throttler
         {
             ThreshholdCount = 30,
             WindowSize = TimeSpan.FromSeconds(1),
@@ -29,9 +29,9 @@ namespace Rackspace.CloudOffice
 
         public ApiClient(string userKey, string secretKey, string baseUrl=DefaultBaseUrl)
         {
-            _userKey = userKey;
+            UserKey = userKey;
             _secretKey = secretKey;
-            _baseUrl = baseUrl;
+            BaseUrl = baseUrl;
         }
 
         public ApiClient(string configFilePath=null)
@@ -44,9 +44,9 @@ namespace Rackspace.CloudOffice
             var config = new XmlDocument();
             config.Load(configFilePath);
 
-            _userKey = ReadNode(config, "/config/userKey");
+            UserKey = ReadNode(config, "/config/userKey");
             _secretKey = ReadNode(config, "/config/secretKey");
-            _baseUrl = ReadNode(config, "/config/baseUrl", DefaultBaseUrl);
+            BaseUrl = ReadNode(config, "/config/baseUrl", DefaultBaseUrl);
         }
 
         public async Task<dynamic> Get(string path)
@@ -118,7 +118,7 @@ namespace Rackspace.CloudOffice
             r.Dispose();
         }
 
-        private async Task<HttpWebRequest> CreateJsonRequest(string method, string path)
+        async Task<HttpWebRequest> CreateJsonRequest(string method, string path)
         {
             await _throttler.Throttle();
 
@@ -128,9 +128,9 @@ namespace Rackspace.CloudOffice
             return request;
         }
 
-        private HttpWebRequest BuildRequest(string method, string path, string acceptType)
+        HttpWebRequest BuildRequest(string method, string path, string acceptType)
         {
-            var request = (HttpWebRequest)WebRequest.Create(_baseUrl + path);
+            var request = (HttpWebRequest)WebRequest.Create(BaseUrl + path);
             request.Method = method;
             request.Accept = acceptType;
             request.UserAgent = "https://github.com/mkropat/RackspaceCloudOfficeApiClient";
@@ -140,23 +140,23 @@ namespace Rackspace.CloudOffice
             return request;
         }
 
-        private void SignRequest(HttpWebRequest request)
+        void SignRequest(HttpWebRequest request)
         {
             var dateTime = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             request.Headers["X-Api-Signature"] = string.Format("{0}:{1}:{2}",
-                _userKey,
+                UserKey,
                 dateTime,
-                ComputeSha1(_userKey + request.UserAgent + dateTime + _secretKey));
+                ComputeSha1(UserKey + request.UserAgent + dateTime + _secretKey));
         }
 
-        private static string ComputeSha1(string data)
+        static string ComputeSha1(string data)
         {
             var sha1 = System.Security.Cryptography.SHA1.Create();
             var hashed = sha1.ComputeHash(Encoding.UTF8.GetBytes(data));
             return Convert.ToBase64String(hashed);
         }
 
-        private static void SendRequestBody(HttpWebRequest request, object data, string contentType)
+        static void SendRequestBody(HttpWebRequest request, object data, string contentType)
         {
             request.ContentType = contentType;
 
@@ -164,7 +164,7 @@ namespace Rackspace.CloudOffice
                 writer.Write(EncodeBody(data, contentType));
         }
 
-        private static string EncodeBody(object data, string contentType)
+        static string EncodeBody(object data, string contentType)
         {
             switch (contentType)
             {
@@ -174,7 +174,7 @@ namespace Rackspace.CloudOffice
             }
         }
 
-        private static string FormUrlEncode(IDictionary<string, string> data)
+        static string FormUrlEncode(IDictionary<string, string> data)
         {
             var pairs = data.Select(pair => string.Format("{0}={1}",
                 WebUtility.UrlEncode(pair.Key),
@@ -182,7 +182,7 @@ namespace Rackspace.CloudOffice
             return string.Join("&", pairs);
         }
 
-        private static IDictionary<string, string> GetObjectAsDictionary(object obj)
+        static IDictionary<string, string> GetObjectAsDictionary(object obj)
         {
             var dict = new Dictionary<string, string>();
 
@@ -195,24 +195,24 @@ namespace Rackspace.CloudOffice
             return dict;
         }
 
-        private static async Task<WebResponse> GetResponse(HttpWebRequest request)
+        static async Task<WebResponse> GetResponse(HttpWebRequest request)
         {
             return await request.GetResponseAsync().ConfigureAwait(false);
         }
 
-        private static T ParseJsonStream<T>(Stream s)
+        static T ParseJsonStream<T>(Stream s)
         {
             return JsonConvert.DeserializeObject<T>(
                 new StreamReader(s).ReadToEnd());
         }
 
-        private static string JoinPathWithQueryString(string path, string queryString)
+        static string JoinPathWithQueryString(string path, string queryString)
         {
             var joiner = path.Contains("?") ? "&" : "?";
             return path + joiner + queryString;
         }
 
-        private static IEnumerable<T> GetEnumerableProperty<T>(ExpandoObject obj, string property)
+        static IEnumerable<T> GetEnumerableProperty<T>(ExpandoObject obj, string property)
         {
             var asDict = (IDictionary<string, object>)obj;
             var items = (IEnumerable<object>)asDict[property];
@@ -222,7 +222,7 @@ namespace Rackspace.CloudOffice
                     : JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item));
         }
 
-        private static string ReadNode(XmlDocument doc, string xpath, string defaultValue = null)
+        static string ReadNode(XmlDocument doc, string xpath, string defaultValue = null)
         {
             var node = doc.SelectSingleNode(xpath);
             if (node != null)
@@ -238,8 +238,8 @@ namespace Rackspace.CloudOffice
             public int ThreshholdCount { get; set; }
             public TimeSpan WindowSize { get; set; }
 
-            private DateTime _windowEnd = DateTime.MinValue;
-            private int _count;
+            DateTime _windowEnd = DateTime.MinValue;
+            int _count;
 
             public async Task Throttle()
             {
@@ -252,7 +252,7 @@ namespace Rackspace.CloudOffice
                 }
             }
 
-            private TimeSpan GetDelay()
+            TimeSpan GetDelay()
             {
                 lock (this)
                 {
