@@ -17,9 +17,9 @@ namespace Rackspace.CloudOffice
     {
         private const string DefaultBaseUrl = "https://api.emailsrvr.com";
 
-        private string _baseUrl;
-        private string _userKey;
-        private string _secretKey;
+        private readonly string _baseUrl;
+        private readonly string _userKey;
+        private readonly string _secretKey;
 
         private readonly Throttler _throttler = new Throttler
         {
@@ -102,15 +102,20 @@ namespace Rackspace.CloudOffice
         {
             await _throttler.Throttle();
 
+            var request = BuildRequest(method, path, ContentType.Json);
+            Trace.WriteLine(string.Format("{0:HH:mm:ss.fff}: {1} {2}",
+                DateTime.Now, request.Method, request.RequestUri.AbsoluteUri));
+            return request;
+        }
+
+        private HttpWebRequest BuildRequest(string method, string path, string acceptType)
+        {
             var request = (HttpWebRequest)WebRequest.Create(_baseUrl + path);
             request.Method = method;
-            request.Accept = ContentType.Json;
+            request.Accept = acceptType;
             request.UserAgent = "https://github.com/mkropat/RackspaceCloudOfficeApiClient";
 
             SignRequest(request);
-
-            Trace.WriteLine(string.Format("{0:HH:mm:ss.fff}: {1} {2}",
-                DateTime.Now, request.Method, request.RequestUri.AbsoluteUri));
 
             return request;
         }
@@ -131,46 +136,12 @@ namespace Rackspace.CloudOffice
             return Convert.ToBase64String(hashed);
         }
 
-        private static async Task<WebResponse> GetResponse(HttpWebRequest request)
-        {
-            return await request.GetResponseAsync().ConfigureAwait(false);
-        }
-
-        private static string ReadNode(XmlDocument doc, string xpath, string defaultValue=null)
-        {
-            var node = doc.SelectSingleNode(xpath);
-            if (node != null)
-                return node.InnerText;
-            else if (defaultValue != null)
-                return defaultValue;
-            else
-                throw new InvalidOperationException("Could not find config value at: " + xpath);
-        }
-
         private static void SendRequestBody(HttpWebRequest request, object data, string contentType)
         {
             request.ContentType = contentType;
 
             using (var writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII))
                 writer.Write(EncodeBody(data, contentType));
-        }
-
-        private static string JoinPathWithQueryString(string path, string queryString)
-        {
-            var joiner = path.Contains("?") ? "&" : "?";
-            return path + joiner + queryString;
-        }
-
-        private static T GetProperty<T>(ExpandoObject obj, string property)
-        {
-            var asDict = (IDictionary<string, object>)obj;
-            return (T)asDict[property];
-        }
-
-        private static ExpandoObject ParseJsonStream(Stream s)
-        {
-            return JsonConvert.DeserializeObject<ExpandoObject>(
-                new StreamReader(s).ReadToEnd());
         }
 
         private static string EncodeBody(object data, string contentType)
@@ -181,6 +152,14 @@ namespace Rackspace.CloudOffice
                 case ContentType.Json:       return JsonConvert.SerializeObject(data);
                 default: throw new ArgumentException("Unsupported contentType: " + contentType);
             }
+        }
+
+        private static string FormUrlEncode(IDictionary<string, string> data)
+        {
+            var pairs = data.Select(pair => string.Format("{0}={1}",
+                WebUtility.UrlEncode(pair.Key),
+                WebUtility.UrlEncode(pair.Value)));
+            return string.Join("&", pairs);
         }
 
         private static IDictionary<string, string> GetObjectAsDictionary(object obj)
@@ -196,12 +175,38 @@ namespace Rackspace.CloudOffice
             return dict;
         }
 
-        private static string FormUrlEncode(IDictionary<string, string> data)
+        private static async Task<WebResponse> GetResponse(HttpWebRequest request)
         {
-            var pairs = data.Select(pair => string.Format("{0}={1}",
-                WebUtility.UrlEncode(pair.Key),
-                WebUtility.UrlEncode(pair.Value)));
-            return string.Join("&", pairs);
+            return await request.GetResponseAsync().ConfigureAwait(false);
+        }
+
+        private static ExpandoObject ParseJsonStream(Stream s)
+        {
+            return JsonConvert.DeserializeObject<ExpandoObject>(
+                new StreamReader(s).ReadToEnd());
+        }
+
+        private static string JoinPathWithQueryString(string path, string queryString)
+        {
+            var joiner = path.Contains("?") ? "&" : "?";
+            return path + joiner + queryString;
+        }
+
+        private static T GetProperty<T>(ExpandoObject obj, string property)
+        {
+            var asDict = (IDictionary<string, object>)obj;
+            return (T)asDict[property];
+        }
+
+        private static string ReadNode(XmlDocument doc, string xpath, string defaultValue = null)
+        {
+            var node = doc.SelectSingleNode(xpath);
+            if (node != null)
+                return node.InnerText;
+            else if (defaultValue != null)
+                return defaultValue;
+            else
+                throw new InvalidOperationException("Could not find config value at: " + xpath);
         }
 
         private class Throttler
