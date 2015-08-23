@@ -21,6 +21,12 @@ namespace Rackspace.CloudOffice
         private string _userKey;
         private string _secretKey;
 
+        private readonly Throttler _throttler = new Throttler
+        {
+            ThreshholdCount = 30,
+            WindowSize = TimeSpan.FromSeconds(1),
+        };
+
         public ApiClient(string userKey, string secretKey, string baseUrl=DefaultBaseUrl)
         {
             _userKey = userKey;
@@ -28,7 +34,7 @@ namespace Rackspace.CloudOffice
             _baseUrl = baseUrl;
         }
 
-        public ApiClient(string configFilePath = null)
+        public ApiClient(string configFilePath=null)
         {
             if (string.IsNullOrEmpty(configFilePath))
                 configFilePath = Path.Combine(
@@ -45,7 +51,7 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Get(string path)
         {
-            using (var r = await GetResponse(CreateJsonRequest("GET", path)))
+            using (var r = await GetResponse(await CreateJsonRequest("GET", path)))
                 return ParseJsonStream(r.GetResponseStream());
         }
 
@@ -70,7 +76,7 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Post(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            var request = CreateJsonRequest("POST", path);
+            var request = await CreateJsonRequest("POST", path);
             SendRequestBody(request, data, contentType);
 
             using (var r = await GetResponse(request))
@@ -79,7 +85,7 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Put(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            var request = CreateJsonRequest("PUT", path);
+            var request = await CreateJsonRequest("PUT", path);
             SendRequestBody(request, data, contentType);
 
             using (var r = await GetResponse(request))
@@ -88,12 +94,14 @@ namespace Rackspace.CloudOffice
 
         public async void Delete(string path)
         {
-            var r = await GetResponse(CreateJsonRequest("DELETE", path));
+            var r = await GetResponse(await CreateJsonRequest("DELETE", path));
             r.Dispose();
         }
 
-        private HttpWebRequest CreateJsonRequest(string method, string path)
+        private async Task<HttpWebRequest> CreateJsonRequest(string method, string path)
         {
+            await _throttler.Throttle();
+
             var request = (HttpWebRequest)WebRequest.Create(_baseUrl + path);
             request.Method = method;
             request.Accept = ContentType.Json;
@@ -194,6 +202,43 @@ namespace Rackspace.CloudOffice
                 WebUtility.UrlEncode(pair.Key),
                 WebUtility.UrlEncode(pair.Value)));
             return string.Join("&", pairs);
+        }
+
+        private class Throttler
+        {
+            public int ThreshholdCount { get; set; }
+            public TimeSpan WindowSize { get; set; }
+
+            private DateTime _windowEnd = DateTime.MinValue;
+            private int _count;
+
+            public async Task Throttle()
+            {
+                var delay = GetDelay();
+                while (delay > TimeSpan.Zero)
+                {
+                    Trace.WriteLine("Throttling");
+                    await Task.Delay(delay);
+                    delay = GetDelay();
+                }
+            }
+
+            private TimeSpan GetDelay()
+            {
+                lock (this)
+                {
+                    if (DateTime.UtcNow > _windowEnd)
+                    {
+                        _windowEnd = DateTime.UtcNow + WindowSize;
+                        _count = 0;
+                    }
+
+                    _count++;
+                    return _count <= ThreshholdCount
+                        ? TimeSpan.Zero
+                        : _windowEnd - DateTime.UtcNow;
+                }
+            }
         }
 
         public static class ContentType
