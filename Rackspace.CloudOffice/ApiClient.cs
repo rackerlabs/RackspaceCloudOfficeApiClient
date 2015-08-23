@@ -51,13 +51,23 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Get(string path)
         {
-            using (var r = await GetResponse(await CreateJsonRequest("GET", path)))
-                return ParseJsonStream(r.GetResponseStream());
+            return await Get<ExpandoObject>(path);
         }
 
-        public async Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize=50)
+        public async Task<T> Get<T>(string path)
         {
-            var result = new List<dynamic>();
+            using (var r = await GetResponse(await CreateJsonRequest("GET", path)))
+                return ParseJsonStream<T>(r.GetResponseStream());
+        }
+
+        public async Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize = 50)
+        {
+            return await GetAll<ExpandoObject>(path, pagedProperty, pageSize);
+        }
+
+        public async Task<IEnumerable<T>> GetAll<T>(string path, string pagedProperty, int pageSize = 50)
+        {
+            var result = new List<T>();
 
             var offset = 0;
             dynamic page;
@@ -66,7 +76,7 @@ namespace Rackspace.CloudOffice
                 var queryString = string.Format("offset={0}&size={1}", offset, pageSize);
                 page = await Get(JoinPathWithQueryString(path, queryString));
 
-                result.AddRange(GetProperty<IEnumerable<dynamic>>(page, pagedProperty));
+                result.AddRange(GetEnumerableProperty<T>(page, pagedProperty));
 
                 offset += pageSize;
             } while (offset < page.total);
@@ -76,20 +86,30 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Post(string path, object data, string contentType=ContentType.UrlEncoded)
         {
+            return await Post<ExpandoObject>(path, data, contentType);
+        }
+
+        public async Task<T> Post<T>(string path, object data, string contentType=ContentType.UrlEncoded)
+        {
             var request = await CreateJsonRequest("POST", path);
             SendRequestBody(request, data, contentType);
 
             using (var r = await GetResponse(request))
-                return ParseJsonStream(r.GetResponseStream());
+                return ParseJsonStream<T>(r.GetResponseStream());
         }
 
         public async Task<dynamic> Put(string path, object data, string contentType=ContentType.UrlEncoded)
+        {
+            return await Put<ExpandoObject>(path, data, contentType);
+        }
+
+        public async Task<T> Put<T>(string path, object data, string contentType=ContentType.UrlEncoded)
         {
             var request = await CreateJsonRequest("PUT", path);
             SendRequestBody(request, data, contentType);
 
             using (var r = await GetResponse(request))
-                return ParseJsonStream(r.GetResponseStream());
+                return ParseJsonStream<T>(r.GetResponseStream());
         }
 
         public async void Delete(string path)
@@ -180,9 +200,9 @@ namespace Rackspace.CloudOffice
             return await request.GetResponseAsync().ConfigureAwait(false);
         }
 
-        private static ExpandoObject ParseJsonStream(Stream s)
+        private static T ParseJsonStream<T>(Stream s)
         {
-            return JsonConvert.DeserializeObject<ExpandoObject>(
+            return JsonConvert.DeserializeObject<T>(
                 new StreamReader(s).ReadToEnd());
         }
 
@@ -192,10 +212,14 @@ namespace Rackspace.CloudOffice
             return path + joiner + queryString;
         }
 
-        private static T GetProperty<T>(ExpandoObject obj, string property)
+        private static IEnumerable<T> GetEnumerableProperty<T>(ExpandoObject obj, string property)
         {
             var asDict = (IDictionary<string, object>)obj;
-            return (T)asDict[property];
+            var items = (IEnumerable<object>)asDict[property];
+            foreach (var item in items)
+                yield return item is T
+                    ? (T)item
+                    : JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item));
         }
 
         private static string ReadNode(XmlDocument doc, string xpath, string defaultValue = null)
