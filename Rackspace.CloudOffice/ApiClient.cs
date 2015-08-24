@@ -197,7 +197,14 @@ namespace Rackspace.CloudOffice
 
         static async Task<WebResponse> GetResponse(HttpWebRequest request)
         {
-            return await request.GetResponseAsync().ConfigureAwait(false);
+            try
+            {
+                return await request.GetResponseAsync().ConfigureAwait(false);
+            }
+            catch (WebException ex)
+            {
+                throw new ApiException(ex);
+            }
         }
 
         static T ParseJsonStream<T>(Stream s)
@@ -274,6 +281,29 @@ namespace Rackspace.CloudOffice
         {
             public const string UrlEncoded = "application/x-www-form-urlencoded";
             public const string Json = "application/json";
+        }
+    }
+
+    public class ApiException : Exception
+    {
+        public dynamic Response { get; private set; }
+
+        public ApiException(WebException ex) : base(GetErrorMessage(ex), ex)
+        {
+            Response = new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
+            try
+            {
+                Response = JsonConvert.DeserializeObject<ExpandoObject>(Response);
+            }
+            catch { }
+        }
+
+        static string GetErrorMessage(WebException ex)
+        {
+            var r = ex.Response as HttpWebResponse;
+            return r == null
+                ? ex.Message
+                : string.Format("{0:d} - {1}", r.StatusCode, r.Headers["x-error-message"]);
         }
     }
 }
