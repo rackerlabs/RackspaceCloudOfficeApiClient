@@ -112,7 +112,7 @@ namespace Rackspace.CloudOffice
                 return ParseJsonStream<T>(r.GetResponseStream());
         }
 
-        public async void Delete(string path)
+        public async Task Delete(string path)
         {
             var r = await GetResponse(await CreateJsonRequest("DELETE", path));
             r.Dispose();
