@@ -42,7 +42,7 @@ don't have to pass them to the constructor every time.  The easiest way to do
 this is to:
 
 1. Download the [Invoke-RsCloudOffice.ps1
-   script](https://github.com/mkropat/Invoke-RsCloudOfficeRequest)
+   script](https://github.com/rackerlabs/Invoke-RsCloudOfficeRequest)
 1. Run the following command:
 
         .\Invoke-RsCloudOfficeRequest.ps1 -SaveConfig -UserKey pugSoulpxYmQDQiY6f1j -SecretKey bI4+E0cV93qigYKuC+sRAJkqyMlc6CThXr9CDXjc

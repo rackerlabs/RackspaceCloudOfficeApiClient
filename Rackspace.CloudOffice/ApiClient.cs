@@ -133,7 +133,7 @@ namespace Rackspace.CloudOffice
             var request = (HttpWebRequest)WebRequest.Create(BaseUrl + path);
             request.Method = method;
             request.Accept = acceptType;
-            request.UserAgent = "https://github.com/mkropat/RackspaceCloudOfficeApiClient";
+            request.UserAgent = "https://github.com/rackerlabs/RackspaceCloudOfficeApiClient";
 
             SignRequest(request);
 

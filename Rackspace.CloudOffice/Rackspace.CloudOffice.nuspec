@@ -6,8 +6,8 @@
     <title>$title$</title>
     <authors>$author$</authors>
     <owners>$author$</owners>
-    <licenseUrl>https://github.com/mkropat/RackspaceCloudOfficeApiClient/blob/master/LICENSE.txt</licenseUrl>
-    <projectUrl>https://github.com/mkropat/RackspaceCloudOfficeApiClient</projectUrl>
+    <licenseUrl>https://github.com/rackerlabs/RackspaceCloudOfficeApiClient/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/rackerlabs/RackspaceCloudOfficeApiClient</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <releaseNotes>v0.2.0 - Change return types to dynamic [BREAKING CHANGE]</releaseNotes>
