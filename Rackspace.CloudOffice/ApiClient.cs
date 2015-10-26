@@ -19,6 +19,7 @@ namespace Rackspace.CloudOffice
 
         public string BaseUrl { get; private set; }
         public string UserKey { get; private set; }
+        public IDictionary<string,string> CustomHeaders { get; private set; } 
 
         readonly string _secretKey;
         readonly Throttler _throttler = new Throttler
@@ -32,6 +33,7 @@ namespace Rackspace.CloudOffice
             UserKey = userKey;
             _secretKey = secretKey;
             BaseUrl = baseUrl;
+            CustomHeaders = new Dictionary<string, string>();
         }
 
         public ApiClient(string configFilePath=null)
@@ -47,6 +49,7 @@ namespace Rackspace.CloudOffice
             UserKey = ReadNode(config, "/config/userKey");
             _secretKey = ReadNode(config, "/config/secretKey");
             BaseUrl = ReadNode(config, "/config/baseUrl", DefaultBaseUrl);
+            CustomHeaders = new Dictionary<string, string>();
         }
 
         public async Task<dynamic> Get(string path)
