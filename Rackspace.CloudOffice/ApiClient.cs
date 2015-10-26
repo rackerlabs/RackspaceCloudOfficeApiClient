@@ -137,6 +137,10 @@ namespace Rackspace.CloudOffice
             request.Method = method;
             request.Accept = acceptType;
             request.UserAgent = "https://github.com/rackerlabs/RackspaceCloudOfficeApiClient";
+            foreach (var customHeader in CustomHeaders)
+            {
+                request.Headers.Add(customHeader.Key, customHeader.Value);
+            }
 
             SignRequest(request);
 
