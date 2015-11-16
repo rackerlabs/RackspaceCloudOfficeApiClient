@@ -313,12 +313,16 @@ namespace Rackspace.CloudOffice
 
         public ApiException(WebException ex) : base(GetErrorMessage(ex), ex)
         {
-            Response = new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
+            var responseStream = ex.Response?.GetResponseStream();
+            if (responseStream == null) return;
+            Response = new StreamReader(responseStream).ReadToEnd();
             try
             {
                 Response = JsonConvert.DeserializeObject<ExpandoObject>(Response);
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         static string GetErrorMessage(WebException ex)
@@ -326,7 +330,7 @@ namespace Rackspace.CloudOffice
             var r = ex.Response as HttpWebResponse;
             return r == null
                 ? ex.Message
-                : string.Format("{0:d} - {1}", r.StatusCode, r.Headers["x-error-message"]);
+                : $"{r.StatusCode:d} - {r.Headers["x-error-message"]}";
         }
     }
 }
