@@ -325,3 +325,7 @@ await client.Put("/v2/domains/example.com/ex/mailboxes/jane.doe", mailboxEdits);
 ```csharp
 await client.Delete("/v2/domains/example.com/ex/mailboxes/jane.doe");
 ```
+
+### See Also
+
+- [Invoke-RsCloudOfficeRequest](https://github.com/rackerlabs/Invoke-RsCloudOfficeRequest) — a PowerShell client for the Cloud Office REST API for scripting and interactive usage
