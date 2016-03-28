@@ -57,8 +57,8 @@ namespace Rackspace.CloudOffice
 
         public async Task<T> Get<T>(string path)
         {
-            using (var r = await GetResponse(await CreateJsonRequest("GET", path)))
-                return ParseJsonStream<T>(r.GetResponseStream());
+            var request = await CreateJsonRequest("GET", path);
+            return await ReadResponse<T>(request);
         }
 
         public async Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize = 50)
@@ -94,9 +94,7 @@ namespace Rackspace.CloudOffice
         {
             var request = await CreateJsonRequest("POST", path);
             SendRequestBody(request, data, contentType);
-
-            using (var r = await GetResponse(request))
-                return ParseJsonStream<T>(r.GetResponseStream());
+            return await ReadResponse<T>(request);
         }
 
         public async Task<dynamic> Put(string path, object data, string contentType=ContentType.UrlEncoded)
@@ -108,14 +106,12 @@ namespace Rackspace.CloudOffice
         {
             var request = await CreateJsonRequest("PUT", path);
             SendRequestBody(request, data, contentType);
-
-            using (var r = await GetResponse(request))
-                return ParseJsonStream<T>(r.GetResponseStream());
+            return await ReadResponse<T>(request);
         }
 
         public async Task Delete(string path)
         {
-            var r = await GetResponse(await CreateJsonRequest("DELETE", path));
+            var r = await GetResponseBody(await CreateJsonRequest("DELETE", path));
             r.Dispose();
         }
 
@@ -169,7 +165,13 @@ namespace Rackspace.CloudOffice
                 writer.Write(BodyEncoder.Encode(data, contentType));
         }
 
-        static async Task<WebResponse> GetResponse(HttpWebRequest request)
+        static async Task<T> ReadResponse<T>(HttpWebRequest request)
+        {
+            using (var r = await GetResponseBody(request))
+                return ParseJsonStream<T>(r.GetResponseStream());
+        }
+
+        static async Task<WebResponse> GetResponseBody(HttpWebRequest request)
         {
             try
             {
