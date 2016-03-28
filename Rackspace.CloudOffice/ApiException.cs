@@ -12,15 +12,26 @@ namespace Rackspace.CloudOffice
 
         public ApiException(WebException ex) : base(GetErrorMessage(ex), ex)
         {
-            var responseStream = ex.Response?.GetResponseStream();
-            if (responseStream == null) return;
-            Response = new StreamReader(responseStream).ReadToEnd();
-            try
+            Response = ParseResponse(ex.Response);
+        }
+
+        static object ParseResponse(WebResponse response)
+        {
+            if (response == null)
+                return null;
+
+            using (var stream = response.GetResponseStream())
+            using (var reader = new StreamReader(stream))
             {
-                Response = JsonConvert.DeserializeObject<ExpandoObject>(Response);
-            }
-            catch
-            {
+                var raw = reader.ReadToEnd();
+                try
+                {
+                    return JsonConvert.DeserializeObject<ExpandoObject>(raw);
+                }
+                catch
+                {
+                    return raw;
+                }
             }
         }
 
