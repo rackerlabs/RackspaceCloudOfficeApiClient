@@ -13,7 +13,6 @@ Features:
 - Thread-safe, so you can call a single instance from as many threads as you want
 - Accepts body data as .NET objects and encodes them for you
 - Can deserialize responses to either a `dynamic` object or to a caller-supplied type
-- [Simple, single-file implementation](Rackspace.CloudOffice/ApiClient.cs)
 
 ### Getting Started
 

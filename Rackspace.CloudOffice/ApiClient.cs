@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -13,22 +11,6 @@ using Newtonsoft.Json;
 
 namespace Rackspace.CloudOffice
 {
-    public interface IApiClient
-    {
-        string BaseUrl { get; }
-        string UserKey { get; }
-        IDictionary<string, string> CustomHeaders { get; }
-        Task<dynamic> Get(string path);
-        Task<T> Get<T>(string path);
-        Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize = 50);
-        Task<IEnumerable<T>> GetAll<T>(string path, string pagedProperty, int pageSize = 50);
-        Task<dynamic> Post(string path, object data, string contentType=ApiClient.ContentType.UrlEncoded);
-        Task<T> Post<T>(string path, object data, string contentType=ApiClient.ContentType.UrlEncoded);
-        Task<dynamic> Put(string path, object data, string contentType=ApiClient.ContentType.UrlEncoded);
-        Task<T> Put<T>(string path, object data, string contentType=ApiClient.ContentType.UrlEncoded);
-        Task Delete(string path);
-    }
-
     public class ApiClient : IApiClient
     {
         public const string DefaultBaseUrl = "https://api.emailsrvr.com";
@@ -184,38 +166,7 @@ namespace Rackspace.CloudOffice
             request.ContentType = contentType;
 
             using (var writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII))
-                writer.Write(EncodeBody(data, contentType));
-        }
-
-        static string EncodeBody(object data, string contentType)
-        {
-            switch (contentType)
-            {
-                case ContentType.UrlEncoded: return FormUrlEncode(GetObjectAsDictionary(data));
-                case ContentType.Json:       return JsonConvert.SerializeObject(data);
-                default: throw new ArgumentException("Unsupported contentType: " + contentType);
-            }
-        }
-
-        static string FormUrlEncode(IDictionary<string, string> data)
-        {
-            var pairs = data.Select(pair => string.Format("{0}={1}",
-                WebUtility.UrlEncode(pair.Key),
-                WebUtility.UrlEncode(pair.Value)));
-            return string.Join("&", pairs);
-        }
-
-        static IDictionary<string, string> GetObjectAsDictionary(object obj)
-        {
-            var dict = new Dictionary<string, string>();
-
-            var properties = obj.GetType()
-                .GetMembers(BindingFlags.Public | BindingFlags.Instance)
-                .OfType<PropertyInfo>();
-            foreach (var prop in properties)
-                dict[prop.Name] = Convert.ToString(prop.GetValue(obj));
-
-            return dict;
+                writer.Write(BodyEncoder.Encode(data, contentType));
         }
 
         static async Task<WebResponse> GetResponse(HttpWebRequest request)
@@ -263,74 +214,10 @@ namespace Rackspace.CloudOffice
                 throw new InvalidOperationException("Could not find config value at: " + xpath);
         }
 
-        private class Throttler
-        {
-            public int ThreshholdCount { get; set; }
-            public TimeSpan WindowSize { get; set; }
-
-            DateTime _windowEnd = DateTime.MinValue;
-            int _count;
-
-            public async Task Throttle()
-            {
-                var delay = GetDelay();
-                while (delay > TimeSpan.Zero)
-                {
-                    Trace.WriteLine("Throttling");
-                    await Task.Delay(delay).ConfigureAwait(false);
-                    delay = GetDelay();
-                }
-            }
-
-            TimeSpan GetDelay()
-            {
-                lock (this)
-                {
-                    if (DateTime.UtcNow > _windowEnd)
-                    {
-                        _windowEnd = DateTime.UtcNow + WindowSize;
-                        _count = 0;
-                    }
-
-                    _count++;
-                    return _count <= ThreshholdCount
-                        ? TimeSpan.Zero
-                        : _windowEnd - DateTime.UtcNow;
-                }
-            }
-        }
-
         public static class ContentType
         {
             public const string UrlEncoded = "application/x-www-form-urlencoded";
             public const string Json = "application/json";
-        }
-    }
-
-    public class ApiException : Exception
-    {
-        public dynamic Response { get; private set; }
-
-        public ApiException(WebException ex) : base(GetErrorMessage(ex), ex)
-        {
-            var responseStream = ex.Response?.GetResponseStream();
-            if (responseStream == null) return;
-            Response = new StreamReader(responseStream).ReadToEnd();
-            try
-            {
-                Response = JsonConvert.DeserializeObject<ExpandoObject>(Response);
-            }
-            catch
-            {
-            }
-        }
-
-        static string GetErrorMessage(WebException ex)
-        {
-            var r = ex.Response as HttpWebResponse;
-            return r == null
-                ? ex.Message
-                : $"{r.StatusCode:d} - {r.Headers["x-error-message"]}";
         }
     }
 }
