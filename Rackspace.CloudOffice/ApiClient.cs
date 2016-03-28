@@ -109,6 +109,18 @@ namespace Rackspace.CloudOffice
             return await ReadResponse<T>(request);
         }
 
+        public async Task<dynamic> Patch(string path, object data, string contentType=ContentType.UrlEncoded)
+        {
+            return await Patch<ExpandoObject>(path, data, contentType);
+        }
+
+        public async Task<T> Patch<T>(string path, object data, string contentType=ContentType.UrlEncoded)
+        {
+            var request = await CreateJsonRequest("PATCH", path);
+            SendRequestBody(request, data, contentType);
+            return await ReadResponse<T>(request);
+        }
+
         public async Task Delete(string path)
         {
             var r = await GetResponseBody(await CreateJsonRequest("DELETE", path));
