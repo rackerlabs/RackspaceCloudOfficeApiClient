@@ -16,6 +16,8 @@ namespace Rackspace.CloudOffice
         Task<T> Post<T>(string path, object data, string contentType = ApiClient.ContentType.UrlEncoded);
         Task<dynamic> Put(string path, object data, string contentType = ApiClient.ContentType.UrlEncoded);
         Task<T> Put<T>(string path, object data, string contentType = ApiClient.ContentType.UrlEncoded);
+        Task<dynamic> Patch(string path, object data, string contentType = ApiClient.ContentType.UrlEncoded);
+        Task<T> Patch<T>(string path, object data, string contentType = ApiClient.ContentType.UrlEncoded);
         Task Delete(string path);
     }
 }

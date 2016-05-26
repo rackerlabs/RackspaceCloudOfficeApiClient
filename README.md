@@ -7,7 +7,7 @@ for full details on the calls you can make.
 
 Features:
 
-- General purpose client for sending `GET`, `POST`, `PUT` and `DELETE` requests
+- General purpose client for sending `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` requests
 - Handles creating the `X-Api-Signature` token for you
 - Automatically throttles requests to a max of 30 per second
 - Thread-safe, so you can call a single instance from as many threads as you want
