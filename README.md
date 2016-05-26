@@ -247,7 +247,7 @@ var newMailbox = new {
     notes = "",
     customID = "JDOE.1234",      // for your own use
     emailForwardingAddress = "", // empty = forwarding disabled
-    visibleInRackspaceEmailCompanyDirectory = true,
+    visibleInRackspaceEmailCompanyDirectory = false,
     enabled = true,
 };
 await client.Post("/v2/domains/example.com/ex/mailboxes/jane.doe", newMailbox);
