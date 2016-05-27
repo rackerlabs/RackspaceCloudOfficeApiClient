@@ -66,21 +66,34 @@ namespace Rackspace.CloudOffice
             return await GetAll<ExpandoObject>(path, pagedProperty, pageSize);
         }
 
+        public async Task<IEnumerable<dynamic>> GetAll(string path, PagingPropertyNames propertyNames, int pageSize = 50)
+        {
+            return await GetAll<ExpandoObject>(path, propertyNames, pageSize);
+        }
+
         public async Task<IEnumerable<T>> GetAll<T>(string path, string pagedProperty, int pageSize = 50)
+        {
+            var propertyNames = PagingPropertyNames.Default;
+            propertyNames.ItemsName = pagedProperty;
+            return await GetAll<T>(path, propertyNames, pageSize);
+        }
+
+        public async Task<IEnumerable<T>> GetAll<T>(string path, PagingPropertyNames propertyNames, int pageSize = 50)
         {
             var result = new List<T>();
 
             var offset = 0;
-            dynamic page;
+            IDictionary<string, object> page;
             do
             {
-                var queryString = string.Format("offset={0}&size={1}", offset, pageSize);
-                page = await Get(JoinPathWithQueryString(path, queryString));
+                var queryString = $"{propertyNames.OffsetName}={offset}&{propertyNames.PageSizeName}={pageSize}";
+                page = await Get<IDictionary<string, object>>(JoinPathWithQueryString(path, queryString));
 
-                result.AddRange(GetEnumerableProperty<T>(page, pagedProperty));
+                var items = ConvertToEnumerable<T>(page[propertyNames.ItemsName]);
+                result.AddRange(items);
 
                 offset += pageSize;
-            } while (offset < page.total);
+            } while (offset < Convert.ToInt32(page[propertyNames.TotalName]));
 
             return result;
         }
@@ -207,11 +220,9 @@ namespace Rackspace.CloudOffice
             return path + joiner + queryString;
         }
 
-        static IEnumerable<T> GetEnumerableProperty<T>(ExpandoObject obj, string property)
+        static IEnumerable<T> ConvertToEnumerable<T>(object collection)
         {
-            var asDict = (IDictionary<string, object>)obj;
-            var items = (IEnumerable<object>)asDict[property];
-            foreach (var item in items)
+            foreach (var item in (IEnumerable<object>)collection)
                 yield return item is T
                     ? (T)item
                     : JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item));
