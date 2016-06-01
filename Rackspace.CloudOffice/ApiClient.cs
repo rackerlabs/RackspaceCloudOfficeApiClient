@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -86,8 +87,11 @@ namespace Rackspace.CloudOffice
             IDictionary<string, object> page;
             do
             {
-                var queryString = $"{propertyNames.OffsetName}={offset}&{propertyNames.PageSizeName}={pageSize}";
-                page = await Get<IDictionary<string, object>>(JoinPathWithQueryString(path, queryString));
+                page = await Get<IDictionary<string, object>>(JoinPathWithQueryString(path, new Dictionary<string, string>
+                {
+                    { propertyNames.OffsetName, offset.ToString() },
+                    { propertyNames.PageSizeName, pageSize.ToString() },
+                }));
 
                 var items = ConvertToEnumerable<T>(page[propertyNames.ItemsName]);
                 result.AddRange(items);
@@ -214,10 +218,11 @@ namespace Rackspace.CloudOffice
                 new StreamReader(s).ReadToEnd());
         }
 
-        static string JoinPathWithQueryString(string path, string queryString)
+        static string JoinPathWithQueryString(string path, IEnumerable<KeyValuePair<string, string>> queryStringParams)
         {
+            var queryStringParts = queryStringParams.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}");
             var joiner = path.Contains("?") ? "&" : "?";
-            return path + joiner + queryString;
+            return path + joiner + string.Join("&", queryStringParts);
         }
 
         static IEnumerable<T> ConvertToEnumerable<T>(object collection)
