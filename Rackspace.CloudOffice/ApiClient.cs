@@ -93,11 +93,11 @@ namespace Rackspace.CloudOffice
                     { propertyNames.PageSizeName, pageSize.ToString() },
                 }));
 
-                var items = ConvertToEnumerable<T>(page[propertyNames.ItemsName]);
+                var items = ConvertToEnumerable<T>(page.GetCaseInensitive(propertyNames.ItemsName));
                 result.AddRange(items);
 
                 offset += pageSize;
-            } while (offset < Convert.ToInt32(page[propertyNames.TotalName]));
+            } while (offset < Convert.ToInt32(page.GetCaseInensitive(propertyNames.TotalName)));
 
             return result;
         }
