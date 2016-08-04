@@ -11,6 +11,9 @@ namespace Rackspace.CloudOffice
     {
         public static string Encode(object data, string contentType)
         {
+            if (data == null)
+                return string.Empty;
+
             switch (contentType)
             {
                 case ApiClient.ContentType.UrlEncoded: return FormUrlEncode(GetObjectAsDictionary(data));
