@@ -10,8 +10,7 @@
     <projectUrl>https://github.com/rackerlabs/RackspaceCloudOfficeApiClient</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>v0.5.1 - Fixed null ref exception in ApiException's constructor.</releaseNotes>
-    <copyright>Copyright 2015</copyright>
+    <copyright>Copyright 2016</copyright>
     <tags>rackspace api</tags>
   </metadata>
 </package>
