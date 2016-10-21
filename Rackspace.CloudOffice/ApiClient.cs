@@ -199,7 +199,7 @@ namespace Rackspace.CloudOffice
             }
             catch (WebException ex)
             {
-                throw new ApiException(ex);
+                throw new ApiException(request, ex);
             }
         }
 

@@ -8,8 +8,9 @@ namespace Rackspace.CloudOffice
 {
     public class ApiException : Exception
     {
-        public dynamic Response { get; private set; }
         public HttpStatusCode? HttpCode { get; private set; }
+        public dynamic Response { get; private set; }
+        public Uri RequestUri { get; private set; }
 
         public ApiException(WebException ex) : base(GetErrorMessage(ex), ex)
         {
@@ -18,6 +19,11 @@ namespace Rackspace.CloudOffice
             var webResponse = ex.Response as HttpWebResponse;
             if (webResponse != null)
                 HttpCode = webResponse.StatusCode;
+        }
+
+        internal ApiException(HttpWebRequest request, WebException ex) : this(ex)
+        {
+            RequestUri = request.RequestUri;
         }
 
         static object ParseResponse(WebResponse response)
