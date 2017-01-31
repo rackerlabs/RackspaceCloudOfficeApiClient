@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 using Newtonsoft.Json;
 using Rackspace.CloudOffice.Helpers;
 
@@ -37,17 +36,10 @@ namespace Rackspace.CloudOffice
 
         public ApiClient(string configFilePath=null)
         {
-            if (string.IsNullOrEmpty(configFilePath))
-                configFilePath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "RsCloudOfficeApi.config");
-
-            var config = new XmlDocument();
-            config.Load(configFilePath);
-
-            UserKey = ReadNode(config, "/config/userKey");
-            _secretKey = ReadNode(config, "/config/secretKey");
-            BaseUrl = ReadNode(config, "/config/baseUrl", DefaultBaseUrl);
+            var config = new ConfigParser(configFilePath);
+            UserKey = config.UserKey;
+            _secretKey = config.SecretKey;
+            BaseUrl = config.BaseUrl;
         }
 
         public async Task<dynamic> Get(string path)
@@ -230,17 +222,6 @@ namespace Rackspace.CloudOffice
                 yield return item is T
                     ? (T)item
                     : JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item));
-        }
-
-        static string ReadNode(XmlDocument doc, string xpath, string defaultValue = null)
-        {
-            var node = doc.SelectSingleNode(xpath);
-            if (node != null)
-                return node.InnerText;
-            else if (defaultValue != null)
-                return defaultValue;
-            else
-                throw new InvalidOperationException("Could not find config value at: " + xpath);
         }
 
         public static class ContentType

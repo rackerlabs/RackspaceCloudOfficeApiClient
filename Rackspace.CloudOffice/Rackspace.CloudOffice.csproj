@@ -48,6 +48,7 @@
     <Compile Include="ApiClient.cs" />
     <Compile Include="ApiException.cs" />
     <Compile Include="Helpers\BodyEncoder.cs" />
+    <Compile Include="Helpers\ConfigParser.cs" />
     <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="IApiClient.cs" />
     <Compile Include="PagingPropertyNames.cs" />
