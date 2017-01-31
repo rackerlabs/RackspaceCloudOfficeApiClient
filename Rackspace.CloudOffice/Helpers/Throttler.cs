@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace Rackspace.CloudOffice
+namespace Rackspace.CloudOffice.Helpers
 {
     internal class Throttler
     {

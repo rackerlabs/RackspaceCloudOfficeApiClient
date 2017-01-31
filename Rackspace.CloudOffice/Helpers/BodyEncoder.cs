@@ -5,7 +5,7 @@ using System.Net;
 using System.Reflection;
 using Newtonsoft.Json;
 
-namespace Rackspace.CloudOffice
+namespace Rackspace.CloudOffice.Helpers
 {
     internal static class BodyEncoder
     {
