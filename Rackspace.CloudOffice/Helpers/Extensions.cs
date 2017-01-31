@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Rackspace.CloudOffice
+namespace Rackspace.CloudOffice.Helpers
 {
     internal static class Extensions
     {

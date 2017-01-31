@@ -7,8 +7,8 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 using Newtonsoft.Json;
+using Rackspace.CloudOffice.Helpers;
 
 namespace Rackspace.CloudOffice
 {
@@ -18,7 +18,7 @@ namespace Rackspace.CloudOffice
 
         public string BaseUrl { get; private set; }
         public string UserKey { get; private set; }
-        public IDictionary<string,string> CustomHeaders { get; private set; } 
+        public IDictionary<string, string> CustomHeaders { get; } = new Dictionary<string, string>();
 
         readonly string _secretKey;
         readonly Throttler _throttler = new Throttler
@@ -32,23 +32,14 @@ namespace Rackspace.CloudOffice
             UserKey = userKey;
             _secretKey = secretKey;
             BaseUrl = baseUrl;
-            CustomHeaders = new Dictionary<string, string>();
         }
 
         public ApiClient(string configFilePath=null)
         {
-            if (string.IsNullOrEmpty(configFilePath))
-                configFilePath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "RsCloudOfficeApi.config");
-
-            var config = new XmlDocument();
-            config.Load(configFilePath);
-
-            UserKey = ReadNode(config, "/config/userKey");
-            _secretKey = ReadNode(config, "/config/secretKey");
-            BaseUrl = ReadNode(config, "/config/baseUrl", DefaultBaseUrl);
-            CustomHeaders = new Dictionary<string, string>();
+            var config = new ConfigParser(configFilePath);
+            UserKey = config.UserKey;
+            _secretKey = config.SecretKey;
+            BaseUrl = config.BaseUrl;
         }
 
         public async Task<dynamic> Get(string path)
@@ -208,7 +199,7 @@ namespace Rackspace.CloudOffice
             }
             catch (WebException ex)
             {
-                throw new ApiException(ex);
+                throw new ApiException(request, ex);
             }
         }
 
@@ -231,17 +222,6 @@ namespace Rackspace.CloudOffice
                 yield return item is T
                     ? (T)item
                     : JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item));
-        }
-
-        static string ReadNode(XmlDocument doc, string xpath, string defaultValue = null)
-        {
-            var node = doc.SelectSingleNode(xpath);
-            if (node != null)
-                return node.InnerText;
-            else if (defaultValue != null)
-                return defaultValue;
-            else
-                throw new InvalidOperationException("Could not find config value at: " + xpath);
         }
 
         public static class ContentType
