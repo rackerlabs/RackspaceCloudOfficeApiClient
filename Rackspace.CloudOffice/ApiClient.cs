@@ -157,11 +157,11 @@ namespace Rackspace.CloudOffice
             return await _requester.Send(request).ConfigureAwait(false);
         }
 
-        static Task<T> ParseResponse<T>(WebResponse response)
+        static async Task<T> ParseResponse<T>(WebResponse response)
         {
             using (var s = response.GetResponseStream())
             {
-                return ParseJsonStream<T>(s);
+                return await ParseJsonStream<T>(s);
             }
         }
 
