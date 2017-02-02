@@ -12,7 +12,7 @@ namespace Rackspace.CloudOffice.Helpers
         public Task<WebResponse> Send(ApiRequest request)
         {
             var webRequest = BuildHttpWebRequest(request);
-            if (request.Body != null)
+            if (request.ShouldSendBody)
                 SendRequestBody(webRequest, request.Body, request.ContentType);
 
             return ReadResponse(webRequest);
@@ -36,8 +36,11 @@ namespace Rackspace.CloudOffice.Helpers
         {
             request.ContentType = contentType;
 
+            using (var stream = request.GetRequestStream())
             using (var writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII))
+            {
                 writer.Write(BodyEncoder.Encode(data, contentType));
+            }
         }
 
         static async Task<WebResponse> ReadResponse(HttpWebRequest request)

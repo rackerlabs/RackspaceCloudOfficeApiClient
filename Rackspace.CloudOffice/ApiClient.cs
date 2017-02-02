@@ -48,7 +48,7 @@ namespace Rackspace.CloudOffice
 
         public async Task<T> Get<T>(string path)
         {
-            using (var response = await Send("GET", path).ConfigureAwait(false))
+            using (var response = await Send("GET", path, sendBody: false).ConfigureAwait(false))
             {
                 return await ParseResponse<T>(response).ConfigureAwait(false);
             }
@@ -140,7 +140,7 @@ namespace Rackspace.CloudOffice
             }
         }
 
-        async Task<WebResponse> Send(string method, string path, object body=null, string contentType=null)
+        async Task<WebResponse> Send(string method, string path, object body=null, string contentType=null, bool sendBody=true)
         {
             await _throttler.Throttle().ConfigureAwait(false);
 
@@ -151,6 +151,7 @@ namespace Rackspace.CloudOffice
                 Headers = CustomHeaders,
                 Method = method,
                 SecretKey = _secretKey,
+                ShouldSendBody = sendBody,
                 Url = BaseUrl + path,
                 UserKey = UserKey,
             };
