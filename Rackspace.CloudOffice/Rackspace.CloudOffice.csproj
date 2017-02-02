@@ -47,9 +47,13 @@
   <ItemGroup>
     <Compile Include="ApiClient.cs" />
     <Compile Include="ApiException.cs" />
+    <Compile Include="Helpers\ApiRequest.cs" />
+    <Compile Include="Helpers\ApiRequester.cs" />
     <Compile Include="Helpers\BodyEncoder.cs" />
     <Compile Include="Helpers\ConfigParser.cs" />
     <Compile Include="Helpers\Extensions.cs" />
+    <Compile Include="Helpers\IApiRequester.cs" />
+    <Compile Include="Helpers\ThrottledHandlingApiRequesterWrapper.cs" />
     <Compile Include="IApiClient.cs" />
     <Compile Include="PagingPropertyNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

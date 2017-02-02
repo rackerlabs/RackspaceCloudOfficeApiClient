@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Rackspace.CloudOffice.Helpers;
@@ -21,6 +19,7 @@ namespace Rackspace.CloudOffice
         public IDictionary<string, string> CustomHeaders { get; } = new Dictionary<string, string>();
 
         readonly string _secretKey;
+        readonly IApiRequester _requester = new ThrottledHandlingApiRequesterWrapper(new ApiRequester());
         readonly Throttler _throttler = new Throttler
         {
             ThreshholdCount = 30,
@@ -44,30 +43,32 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Get(string path)
         {
-            return await Get<ExpandoObject>(path);
+            return await Get<ExpandoObject>(path).ConfigureAwait(false);
         }
 
         public async Task<T> Get<T>(string path)
         {
-            var request = await CreateJsonRequest("GET", path);
-            return await ReadResponse<T>(request);
+            using (var response = await Send("GET", path).ConfigureAwait(false))
+            {
+                return await ParseResponse<T>(response).ConfigureAwait(false);
+            }
         }
 
         public async Task<IEnumerable<dynamic>> GetAll(string path, string pagedProperty, int pageSize = 50)
         {
-            return await GetAll<ExpandoObject>(path, pagedProperty, pageSize);
+            return await GetAll<ExpandoObject>(path, pagedProperty, pageSize).ConfigureAwait(false);
         }
 
         public async Task<IEnumerable<dynamic>> GetAll(string path, PagingPropertyNames propertyNames, int pageSize = 50)
         {
-            return await GetAll<ExpandoObject>(path, propertyNames, pageSize);
+            return await GetAll<ExpandoObject>(path, propertyNames, pageSize).ConfigureAwait(false);
         }
 
         public async Task<IEnumerable<T>> GetAll<T>(string path, string pagedProperty, int pageSize = 50)
         {
             var propertyNames = PagingPropertyNames.Default;
             propertyNames.ItemsName = pagedProperty;
-            return await GetAll<T>(path, propertyNames, pageSize);
+            return await GetAll<T>(path, propertyNames, pageSize).ConfigureAwait(false);
         }
 
         public async Task<IEnumerable<T>> GetAll<T>(string path, PagingPropertyNames propertyNames, int pageSize = 50)
@@ -82,7 +83,7 @@ namespace Rackspace.CloudOffice
                 {
                     { propertyNames.OffsetName, offset.ToString() },
                     { propertyNames.PageSizeName, pageSize.ToString() },
-                }));
+                })).ConfigureAwait(false);
 
                 var items = ConvertToEnumerable<T>(page.GetCaseInensitive(propertyNames.ItemsName));
                 result.AddRange(items);
@@ -95,118 +96,82 @@ namespace Rackspace.CloudOffice
 
         public async Task<dynamic> Post(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            return await Post<ExpandoObject>(path, data, contentType);
+            return await Post<ExpandoObject>(path, data, contentType).ConfigureAwait(false);
         }
 
         public async Task<T> Post<T>(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            var request = await CreateJsonRequest("POST", path);
-            SendRequestBody(request, data, contentType);
-            return await ReadResponse<T>(request);
+            using (var response = await Send("POST", path, data, contentType).ConfigureAwait(false))
+            {
+                return await ParseResponse<T>(response).ConfigureAwait(false);
+            }
         }
 
         public async Task<dynamic> Put(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            return await Put<ExpandoObject>(path, data, contentType);
+            return await Put<ExpandoObject>(path, data, contentType).ConfigureAwait(false);
         }
 
         public async Task<T> Put<T>(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            var request = await CreateJsonRequest("PUT", path);
-            SendRequestBody(request, data, contentType);
-            return await ReadResponse<T>(request);
+            using (var response = await Send("PUT", path, data, contentType).ConfigureAwait(false))
+            {
+                return await ParseResponse<T>(response).ConfigureAwait(false);
+            }
         }
 
         public async Task<dynamic> Patch(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            return await Patch<ExpandoObject>(path, data, contentType);
+            return await Patch<ExpandoObject>(path, data, contentType).ConfigureAwait(false);
         }
 
         public async Task<T> Patch<T>(string path, object data, string contentType=ContentType.UrlEncoded)
         {
-            var request = await CreateJsonRequest("PATCH", path);
-            SendRequestBody(request, data, contentType);
-            return await ReadResponse<T>(request);
+            using (var response = await Send("PATCH", path, data, contentType).ConfigureAwait(false))
+            {
+                return await ParseResponse<T>(response).ConfigureAwait(false);
+            }
         }
 
         public async Task Delete(string path)
         {
-            var r = await GetResponseBody(await CreateJsonRequest("DELETE", path));
-            r.Dispose();
-        }
-
-        async Task<HttpWebRequest> CreateJsonRequest(string method, string path)
-        {
-            await _throttler.Throttle();
-
-            var request = BuildRequest(method, path, ContentType.Json);
-            Trace.WriteLine(string.Format("{0:HH:mm:ss.fff}: {1} {2}",
-                DateTime.Now, request.Method, request.RequestUri.AbsoluteUri));
-            return request;
-        }
-
-        HttpWebRequest BuildRequest(string method, string path, string acceptType)
-        {
-            var request = (HttpWebRequest)WebRequest.Create(BaseUrl + path);
-            request.Method = method;
-            request.Accept = acceptType;
-            request.UserAgent = "https://github.com/rackerlabs/RackspaceCloudOfficeApiClient";
-            foreach (var customHeader in CustomHeaders)
+            using (var response = await Send("DELETE", path).ConfigureAwait(false))
             {
-                request.Headers.Add(customHeader.Key, customHeader.Value);
-            }
-
-            SignRequest(request);
-
-            return request;
-        }
-
-        void SignRequest(HttpWebRequest request)
-        {
-            var dateTime = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            request.Headers["X-Api-Signature"] = string.Format("{0}:{1}:{2}",
-                UserKey,
-                dateTime,
-                ComputeSha1(UserKey + request.UserAgent + dateTime + _secretKey));
-        }
-
-        static string ComputeSha1(string data)
-        {
-            var sha1 = System.Security.Cryptography.SHA1.Create();
-            var hashed = sha1.ComputeHash(Encoding.UTF8.GetBytes(data));
-            return Convert.ToBase64String(hashed);
-        }
-
-        static void SendRequestBody(HttpWebRequest request, object data, string contentType)
-        {
-            request.ContentType = contentType;
-
-            using (var writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII))
-                writer.Write(BodyEncoder.Encode(data, contentType));
-        }
-
-        static async Task<T> ReadResponse<T>(HttpWebRequest request)
-        {
-            using (var r = await GetResponseBody(request))
-                return ParseJsonStream<T>(r.GetResponseStream());
-        }
-
-        static async Task<WebResponse> GetResponseBody(HttpWebRequest request)
-        {
-            try
-            {
-                return await request.GetResponseAsync().ConfigureAwait(false);
-            }
-            catch (WebException ex)
-            {
-                throw new ApiException(request, ex);
             }
         }
 
-        static T ParseJsonStream<T>(Stream s)
+        async Task<WebResponse> Send(string method, string path, object body=null, string contentType=null)
         {
-            return JsonConvert.DeserializeObject<T>(
-                new StreamReader(s).ReadToEnd());
+            await _throttler.Throttle().ConfigureAwait(false);
+
+            var request = new ApiRequest
+            {
+                Body = body,
+                ContentType = contentType,
+                Headers = CustomHeaders,
+                Method = method,
+                SecretKey = _secretKey,
+                Url = BaseUrl + path,
+                UserKey = UserKey,
+            };
+            return await _requester.Send(request).ConfigureAwait(false);
+        }
+
+        static Task<T> ParseResponse<T>(WebResponse response)
+        {
+            using (var s = response.GetResponseStream())
+            {
+                return ParseJsonStream<T>(s);
+            }
+        }
+
+        static async Task<T> ParseJsonStream<T>(Stream s)
+        {
+            using (var reader = new StreamReader(s))
+            {
+                var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+                return JsonConvert.DeserializeObject<T>(body);
+            }
         }
 
         static string JoinPathWithQueryString(string path, IEnumerable<KeyValuePair<string, string>> queryStringParams)
