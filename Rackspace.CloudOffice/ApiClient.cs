@@ -19,7 +19,7 @@ namespace Rackspace.CloudOffice
         public IDictionary<string, string> CustomHeaders { get; } = new Dictionary<string, string>();
 
         readonly string _secretKey;
-        readonly IApiRequester _requester = new ApiRequester();
+        readonly IApiRequester _requester = new ThrottledHandlingApiRequesterWrapper(new ApiRequester());
         readonly Throttler _throttler = new Throttler
         {
             ThreshholdCount = 30,
