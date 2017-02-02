@@ -36,8 +36,11 @@ namespace Rackspace.CloudOffice.Helpers
         {
             request.ContentType = contentType;
 
+            using (var stream = request.GetRequestStream())
             using (var writer = new StreamWriter(request.GetRequestStream(), Encoding.ASCII))
+            {
                 writer.Write(BodyEncoder.Encode(data, contentType));
+            }
         }
 
         static async Task<WebResponse> ReadResponse(HttpWebRequest request)
