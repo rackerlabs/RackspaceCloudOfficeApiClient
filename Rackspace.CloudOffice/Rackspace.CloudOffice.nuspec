@@ -10,7 +10,8 @@
     <projectUrl>https://github.com/rackerlabs/RackspaceCloudOfficeApiClient</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <copyright>Copyright 2016</copyright>
+    <releaseNotes>v0.7.0 - Improved throttling handling</releaseNotes>
+    <copyright>Copyright 2017</copyright>
     <tags>rackspace api</tags>
   </metadata>
 </package>
