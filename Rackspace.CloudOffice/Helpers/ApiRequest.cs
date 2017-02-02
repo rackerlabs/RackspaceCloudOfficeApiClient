@@ -9,6 +9,7 @@ namespace Rackspace.CloudOffice.Helpers
         public IDictionary<string, string> Headers { get; set; }
         public string UserKey { get; set; }
         public string SecretKey { get; set; }
+        public bool ShouldSendBody { get; set; }
         public object Body { get; set; }
         public string ContentType { get; set; }
     }

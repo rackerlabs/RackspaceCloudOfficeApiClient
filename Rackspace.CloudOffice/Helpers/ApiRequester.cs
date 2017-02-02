@@ -12,7 +12,7 @@ namespace Rackspace.CloudOffice.Helpers
         public Task<WebResponse> Send(ApiRequest request)
         {
             var webRequest = BuildHttpWebRequest(request);
-            if (request.Body != null)
+            if (request.ShouldSendBody)
                 SendRequestBody(webRequest, request.Body, request.ContentType);
 
             return ReadResponse(webRequest);
